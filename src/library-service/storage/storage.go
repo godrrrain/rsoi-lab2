@@ -87,7 +87,9 @@ func (pg *postgres) GetLibrariesByCity(ctx context.Context, city string) ([]Libr
 }
 
 func (pg *postgres) GetBooksByLibraryUid(ctx context.Context, libraryUid string) ([]Book, error) {
-	query := fmt.Sprintf(`SELECT books.*, library_books.available_count from library_books, books, library where library.library_uid = '%s'`, libraryUid)
+	query := fmt.Sprintf(`SELECT books.*, library_books.available_count from library_books, books, library 
+	where library.library_uid = '%s' and library.id = library_books.library_id 
+	and books.id = library_books.book_id;`, libraryUid)
 
 	rows, err := pg.db.Query(ctx, query)
 

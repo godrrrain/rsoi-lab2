@@ -28,7 +28,7 @@ func NewHandler(storage storage.Storage) *Handler {
 
 func (h *Handler) GetLibrariesByCity(c *gin.Context) {
 
-	libraries, err := h.storage.GetLibrariesByCity(context.Background(), c.Param("city"))
+	libraries, err := h.storage.GetLibrariesByCity(context.Background(), c.Query("city"))
 
 	if err != nil {
 		fmt.Printf("failed to get libraries %s\n", err.Error())

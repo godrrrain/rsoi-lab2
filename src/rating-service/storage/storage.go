@@ -13,7 +13,7 @@ import (
 type Rating struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
-	Stars    string `json:"stars"`
+	Stars    int    `json:"stars"`
 }
 
 type Storage interface {

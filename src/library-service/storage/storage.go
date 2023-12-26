@@ -27,6 +27,15 @@ type Book struct {
 	Available_count int    `json:"available_count"`
 }
 
+type BookInfo struct {
+	ID        int    `json:"id"`
+	Book_uid  string `json:"book_uid"`
+	Name      string `json:"name"`
+	Author    string `json:"author"`
+	Genre     string `json:"genre"`
+	Condition string `json:"condition"`
+}
+
 type Storage interface {
 	// Insert(e *Person)
 	// Get(id int) (Person, error)
@@ -34,7 +43,9 @@ type Storage interface {
 	// Delete(id int) error
 	// GetAll() []Person
 	GetLibrariesByCity(ctx context.Context, city string) ([]Library, error)
-	GetBooksByLibraryUid(ctx context.Context, libraryUid string) ([]Book, error)
+	GetBooksByLibraryUid(ctx context.Context, libraryUid string, showAll bool) ([]Book, error)
+	GetBookByUid(ctx context.Context, bookUid string) (BookInfo, error)
+	GetLibraryByUid(ctx context.Context, libraryUid string) (Library, error)
 }
 
 type postgres struct {
@@ -86,10 +97,17 @@ func (pg *postgres) GetLibrariesByCity(ctx context.Context, city string) ([]Libr
 	return libraries, nil
 }
 
-func (pg *postgres) GetBooksByLibraryUid(ctx context.Context, libraryUid string) ([]Book, error) {
-	query := fmt.Sprintf(`SELECT books.*, library_books.available_count from library_books, books, library 
+func (pg *postgres) GetBooksByLibraryUid(ctx context.Context, libraryUid string, showAll bool) ([]Book, error) {
+	query := ""
+	if showAll {
+		query = fmt.Sprintf(`SELECT books.*, library_books.available_count from library_books, books, library 
 	where library.library_uid = '%s' and library.id = library_books.library_id 
 	and books.id = library_books.book_id;`, libraryUid)
+	} else {
+		query = fmt.Sprintf(`SELECT books.*, library_books.available_count from library_books, books, library 
+	where library.library_uid = '%s' and library.id = library_books.library_id 
+	and books.id = library_books.book_id and library_books.available_count > 0;`, libraryUid)
+	}
 
 	rows, err := pg.db.Query(ctx, query)
 
@@ -107,4 +125,48 @@ func (pg *postgres) GetBooksByLibraryUid(ctx context.Context, libraryUid string)
 	}
 
 	return books, nil
+}
+
+func (pg *postgres) GetBookByUid(ctx context.Context, bookUid string) (BookInfo, error) {
+
+	query := fmt.Sprintf(`SELECT * FROM books WHERE book_uid = '%s'`, bookUid)
+
+	rows, err := pg.db.Query(ctx, query)
+
+	var book BookInfo
+
+	if err != nil {
+		return book, fmt.Errorf("unable to query: %w", err)
+	}
+	defer rows.Close()
+
+	book, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[BookInfo])
+	if err != nil {
+		fmt.Printf("CollectRows error: %v", err)
+		return book, err
+	}
+
+	return book, nil
+}
+
+func (pg *postgres) GetLibraryByUid(ctx context.Context, libraryUid string) (Library, error) {
+
+	query := fmt.Sprintf(`SELECT id, library_uid, name, city, address FROM library WHERE library_uid = '%s'`, libraryUid)
+
+	rows, err := pg.db.Query(ctx, query)
+
+	var library Library
+
+	if err != nil {
+		return library, fmt.Errorf("unable to query: %w", err)
+	}
+	defer rows.Close()
+
+	library, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[Library])
+	if err != nil {
+		fmt.Printf("CollectRows error: %v", err)
+		return library, err
+	}
+
+	return library, nil
 }

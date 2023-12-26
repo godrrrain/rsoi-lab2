@@ -33,5 +33,5 @@ func main() {
 	router.POST("/api/v1/reservations", handler.CreateReservation)
 	router.PATCH("/api/v1/reservations/:uid", handler.UpdateReservationStatus)
 
-	router.Run()
+	router.Run(":8070")
 }

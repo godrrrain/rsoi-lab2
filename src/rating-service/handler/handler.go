@@ -22,6 +22,10 @@ type Handler struct {
 	storage storage.Storage
 }
 
+type RatingResponse struct {
+	Stars int `json:"stars"`
+}
+
 func NewHandler(storage storage.Storage) *Handler {
 	return &Handler{storage: storage}
 }
@@ -47,5 +51,7 @@ func (h *Handler) GetRating(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, rating)
+	c.JSON(http.StatusOK, RatingResponse{
+		Stars: rating.Stars,
+	})
 }

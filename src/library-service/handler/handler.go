@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"lab2/src/library-service/storage"
 
@@ -16,6 +17,29 @@ type ErrorResponse struct {
 
 type MessageResponse struct {
 	Message string `json:"message"`
+}
+
+type LibraryResponse struct {
+	Library_uid string `json:"library_uid"`
+	Name        string `json:"name"`
+	Address     string `json:"address"`
+	City        string `json:"city"`
+}
+
+type BookResponse struct {
+	Book_uid        string `json:"book_uid"`
+	Name            string `json:"name"`
+	Author          string `json:"author"`
+	Genre           string `json:"genre"`
+	Condition       string `json:"condition"`
+	Available_count int    `json:"available_count"`
+}
+
+type BookToUserResponse struct {
+	Book_uid string `json:"book_uid"`
+	Name     string `json:"name"`
+	Author   string `json:"author"`
+	Genre    string `json:"genre"`
 }
 
 type Handler struct {
@@ -38,12 +62,17 @@ func (h *Handler) GetLibrariesByCity(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, libraries)
+	c.JSON(http.StatusOK, LibrariesToResponse(libraries))
 }
 
 func (h *Handler) GetBooksByLibraryUid(c *gin.Context) {
 
-	libraries, err := h.storage.GetBooksByLibraryUid(context.Background(), c.Param("uid"))
+	showAll, err := strconv.ParseBool(c.Query("showAll"))
+	if err != nil {
+		showAll = false
+	}
+
+	books, err := h.storage.GetBooksByLibraryUid(context.Background(), c.Param("uid"), showAll)
 
 	if err != nil {
 		fmt.Printf("failed to get libraries %s\n", err.Error())
@@ -53,5 +82,88 @@ func (h *Handler) GetBooksByLibraryUid(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, libraries)
+	c.JSON(http.StatusOK, BooksToResponse(books))
+}
+
+func (h *Handler) GetBookByUid(c *gin.Context) {
+
+	book, err := h.storage.GetBookByUid(context.Background(), c.Param("uid"))
+
+	if err != nil {
+		fmt.Printf("failed to get libraries %s\n", err.Error())
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, BookToUserResponse{
+		Book_uid: book.Book_uid,
+		Name:     book.Name,
+		Author:   book.Author,
+		Genre:    book.Genre,
+	})
+}
+
+func (h *Handler) GetLibraryByUid(c *gin.Context) {
+
+	library, err := h.storage.GetLibraryByUid(context.Background(), c.Param("uid"))
+
+	if err != nil {
+		fmt.Printf("failed to get libraries %s\n", err.Error())
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, LibraryToResponse(library))
+}
+
+func LibraryToResponse(library storage.Library) LibraryResponse {
+	return LibraryResponse{
+		Library_uid: library.Library_uid,
+		Name:        library.Name,
+		City:        library.City,
+		Address:     library.Address,
+	}
+}
+
+func LibrariesToResponse(libraries []storage.Library) []LibraryResponse {
+	if libraries == nil {
+		return nil
+	}
+
+	res := make([]LibraryResponse, len(libraries))
+
+	for index, value := range libraries {
+		res[index] = LibraryToResponse(value)
+	}
+
+	return res
+}
+
+func BookToResponse(book storage.Book) BookResponse {
+	return BookResponse{
+		Book_uid:        book.Book_uid,
+		Name:            book.Name,
+		Author:          book.Author,
+		Genre:           book.Genre,
+		Condition:       book.Condition,
+		Available_count: book.Available_count,
+	}
+}
+
+func BooksToResponse(books []storage.Book) []BookResponse {
+	if books == nil {
+		return nil
+	}
+
+	res := make([]BookResponse, len(books))
+
+	for index, value := range books {
+		res[index] = BookToResponse(value)
+	}
+
+	return res
 }

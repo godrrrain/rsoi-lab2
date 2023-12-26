@@ -22,12 +22,19 @@ type Reservation struct {
 	Till_date       time.Time `json:"till_date"`
 }
 
-type ReservationAmount struct {
-	Amount int `json:"amount"`
+type ReservationResponse struct {
+	ID              int    `json:"id"`
+	Reservation_uid string `json:"reservation_uid"`
+	Username        string `json:"username"`
+	Book_uid        string `json:"book_uid"`
+	Library_uid     string `json:"library_uid"`
+	Status          string `json:"status"`
+	Start_date      string `json:"start_date"`
+	Till_date       string `json:"till_date"`
 }
 
-type ReservationUid struct {
-	Reservation_uid string `json:"reservation_uid"`
+type ReservationAmount struct {
+	Amount int `json:"amount"`
 }
 
 type Storage interface {
@@ -37,7 +44,7 @@ type Storage interface {
 	GetReservations(ctx context.Context, username string) ([]Reservation, error)
 	GetReservationByUid(ctx context.Context, reservation_uid string) (Reservation, error)
 	GetRentedReservationAmount(ctx context.Context, username string) (ReservationAmount, error)
-	CreateReservation(ctx context.Context, username string, bookUid string, libraryUid string, tillDate string) (ReservationUid, error)
+	CreateReservation(ctx context.Context, username string, bookUid string, libraryUid string, tillDate string) (ReservationResponse, error)
 	UpdateReservationStatus(ctx context.Context, reservation_uid string, condition string) error
 }
 
@@ -69,20 +76,20 @@ func (pg *postgres) Close() {
 	pg.db.Close()
 }
 
-func (pg *postgres) CreateReservation(ctx context.Context, username string, bookUid string, libraryUid string, tillDate string) (ReservationUid, error) {
+func (pg *postgres) CreateReservation(ctx context.Context, username string, bookUid string, libraryUid string, tillDate string) (ReservationResponse, error) {
 
-	var reservationUid ReservationUid
+	var reservation ReservationResponse
 
 	uid := uuid.New()
 
-	reservationUid.Reservation_uid = uid.String()
+	reservation_uid := uid.String()
 
 	start_date := time.Now().UTC().Format("2006-01-02")
 
 	query := `INSERT INTO reservation (reservation_uid, username, book_uid, library_uid, status, start_date, till_date) 
 	VALUES (@reservation_uid, @username, @book_uid, @library_uid, @status, @start_date, @till_date)`
 	args := pgx.NamedArgs{
-		"reservation_uid": reservationUid.Reservation_uid,
+		"reservation_uid": reservation_uid,
 		"username":        username,
 		"book_uid":        bookUid,
 		"library_uid":     libraryUid,
@@ -92,10 +99,17 @@ func (pg *postgres) CreateReservation(ctx context.Context, username string, book
 	}
 	_, err := pg.db.Exec(ctx, query, args)
 	if err != nil {
-		return reservationUid, fmt.Errorf("unable to insert row: %w", err)
+		return reservation, fmt.Errorf("unable to insert row: %w", err)
 	}
+	reservation.Reservation_uid = reservation_uid
+	reservation.Username = username
+	reservation.Book_uid = bookUid
+	reservation.Library_uid = libraryUid
+	reservation.Status = "RENTED"
+	reservation.Start_date = start_date
+	reservation.Till_date = tillDate
 
-	return reservationUid, nil
+	return reservation, nil
 }
 
 func (pg *postgres) GetReservationByUid(ctx context.Context, reservation_uid string) (Reservation, error) {

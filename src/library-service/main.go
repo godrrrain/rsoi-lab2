@@ -29,6 +29,8 @@ func main() {
 
 	router.GET("/api/v1/libraries", handler.GetLibrariesByCity)
 	router.GET("/api/v1/libraries/:uid/books/", handler.GetBooksByLibraryUid)
+	router.GET("/api/v1/libraries/:uid/", handler.GetLibraryByUid)
+	router.GET("/api/v1/books/:uid/", handler.GetBookByUid)
 
-	router.Run()
+	router.Run(":8060")
 }

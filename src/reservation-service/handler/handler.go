@@ -29,6 +29,16 @@ type RequestCreateReservation struct {
 	TillDate   string `json:"tillDate"`
 }
 
+type ReservationResponse struct {
+	Reservation_uid string `json:"reservation_uid"`
+	Username        string `json:"username"`
+	Book_uid        string `json:"book_uid"`
+	Library_uid     string `json:"library_uid"`
+	Status          string `json:"status"`
+	Start_date      string `json:"start_date"`
+	Till_date       string `json:"till_date"`
+}
+
 func NewHandler(storage storage.Storage) *Handler {
 	return &Handler{storage: storage}
 }
@@ -54,7 +64,7 @@ func (h *Handler) GetReservations(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, reservations)
+	c.JSON(http.StatusOK, ReservationsToResponse(reservations))
 }
 
 func (h *Handler) GetReservationByUid(c *gin.Context) {
@@ -146,4 +156,30 @@ func (h *Handler) UpdateReservationStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, MessageResponse{
 		Message: "status updated",
 	})
+}
+
+func ReservationToResponse(reservation storage.Reservation) ReservationResponse {
+	return ReservationResponse{
+		Reservation_uid: reservation.Reservation_uid,
+		Username:        reservation.Username,
+		Book_uid:        reservation.Book_uid,
+		Library_uid:     reservation.Library_uid,
+		Status:          reservation.Status,
+		Start_date:      reservation.Start_date.Format("2006-01-02"),
+		Till_date:       reservation.Till_date.Format("2006-01-02"),
+	}
+}
+
+func ReservationsToResponse(reservations []storage.Reservation) []ReservationResponse {
+	if reservations == nil {
+		return nil
+	}
+
+	res := make([]ReservationResponse, len(reservations))
+
+	for index, value := range reservations {
+		res[index] = ReservationToResponse(value)
+	}
+
+	return res
 }

@@ -51,6 +51,10 @@ CREATE TABLE library_books
     library_id      INT REFERENCES library (id),
     available_count INT NOT NULL
 );
+-- UPDATE library_books SET available_count = 0 WHERE book_id = 3;
+-- SELECT books.*, library_books.available_count from library_books, books, library 
+-- 	where books.book_uid = 'c6cdb5f4-40c2-4658-b71d-66385e8707ee' and library.id = library_books.library_id 
+-- 	and books.id = library_books.book_id;
 
 INSERT INTO library VALUES (1, '83575e12-7ce0-48ee-9931-51919ff3c9ee', 'Библиотека имени 7 Непьющих', 'Москва', '2-я Бауманская ул., д.5, стр.1');
 INSERT INTO books VALUES (1, 'f7cdc58f-2caf-4b15-9727-f89dcc629b27', 'Краткий курс C++ в 7 томах', 'Бьерн Страуструп', 'Научная фантастика', 'EXCELLENT');

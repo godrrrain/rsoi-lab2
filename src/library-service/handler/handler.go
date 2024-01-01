@@ -85,9 +85,36 @@ func (h *Handler) GetBooksByLibraryUid(c *gin.Context) {
 	c.JSON(http.StatusOK, BooksToResponse(books))
 }
 
-func (h *Handler) GetBookByUid(c *gin.Context) {
+func (h *Handler) UpdateBookCount(c *gin.Context) {
 
 	book, err := h.storage.GetBookByUid(context.Background(), c.Param("uid"))
+
+	if err != nil {
+		fmt.Printf("failed to get libraries %s\n", err.Error())
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	err = h.storage.UpdateBookCount(context.Background(), book.ID, book.Available_count-1)
+
+	if err != nil {
+		fmt.Printf("failed to update book count %s\n", err.Error())
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, MessageResponse{
+		Message: "count updated",
+	})
+}
+
+func (h *Handler) GetBookInfoByUid(c *gin.Context) {
+
+	book, err := h.storage.GetBookInfoByUid(context.Background(), c.Param("uid"))
 
 	if err != nil {
 		fmt.Printf("failed to get libraries %s\n", err.Error())

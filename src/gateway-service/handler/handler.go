@@ -489,8 +489,6 @@ func (h *Handler) CreateReservation(c *gin.Context) {
 		return
 	}
 
-	//reservation, err := h.storage.CreateReservation(context.Background(), username, reqCrRes.BookUid, reqCrRes.LibraryUid, reqCrRes.TillDate)
-
 	//getting amount
 	requestAmountURL := fmt.Sprintf("%s/api/v1/reservations/amount", reservationService)
 
@@ -574,6 +572,11 @@ func (h *Handler) CreateReservation(c *gin.Context) {
 	requestCreateURL := fmt.Sprintf("%s/api/v1/reservations", reservationService)
 
 	marshalled, err := json.Marshal(inputCreateBody)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+	}
 
 	reqCreate, err := http.NewRequest(http.MethodPost, requestCreateURL, bytes.NewReader(marshalled))
 	if err != nil {
@@ -687,5 +690,32 @@ func (h *Handler) CreateReservation(c *gin.Context) {
 		Rating:          rating,
 	}
 
+	requestUpdateCountURL := fmt.Sprintf("%s/api/v1/books/%s/count", libraryService, book.Book_uid)
+
+	reqCount, err := http.NewRequest(http.MethodPut, requestUpdateCountURL, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	resCount, err := http.DefaultClient.Do(reqCount)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	if resCount.StatusCode != 200 {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: "error while updating count",
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, response)
+
+	//TO DO уменьшить available_count
 }

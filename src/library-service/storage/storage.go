@@ -44,8 +44,10 @@ type Storage interface {
 	// GetAll() []Person
 	GetLibrariesByCity(ctx context.Context, city string) ([]Library, error)
 	GetBooksByLibraryUid(ctx context.Context, libraryUid string, showAll bool) ([]Book, error)
-	GetBookByUid(ctx context.Context, bookUid string) (BookInfo, error)
+	GetBookByUid(ctx context.Context, bookUid string) (Book, error)
+	GetBookInfoByUid(ctx context.Context, bookUid string) (BookInfo, error)
 	GetLibraryByUid(ctx context.Context, libraryUid string) (Library, error)
+	UpdateBookCount(ctx context.Context, bookId int, count int) error
 }
 
 type postgres struct {
@@ -127,7 +129,31 @@ func (pg *postgres) GetBooksByLibraryUid(ctx context.Context, libraryUid string,
 	return books, nil
 }
 
-func (pg *postgres) GetBookByUid(ctx context.Context, bookUid string) (BookInfo, error) {
+func (pg *postgres) GetBookByUid(ctx context.Context, bookUid string) (Book, error) {
+
+	query := fmt.Sprintf(`SELECT books.*, library_books.available_count from library_books, books, library 
+	where books.book_uid = '%s' and library.id = library_books.library_id 
+	and books.id = library_books.book_id;`, bookUid)
+
+	rows, err := pg.db.Query(ctx, query)
+
+	var book Book
+
+	if err != nil {
+		return book, fmt.Errorf("unable to query: %w", err)
+	}
+	defer rows.Close()
+
+	book, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[Book])
+	if err != nil {
+		fmt.Printf("CollectRows error: %v", err)
+		return book, err
+	}
+
+	return book, nil
+}
+
+func (pg *postgres) GetBookInfoByUid(ctx context.Context, bookUid string) (BookInfo, error) {
 
 	query := fmt.Sprintf(`SELECT * FROM books WHERE book_uid = '%s'`, bookUid)
 
@@ -170,3 +196,43 @@ func (pg *postgres) GetLibraryByUid(ctx context.Context, libraryUid string) (Lib
 
 	return library, nil
 }
+
+func (pg *postgres) UpdateBookCount(ctx context.Context, bookId int, count int) error {
+	query := fmt.Sprintf(`UPDATE library_books SET available_count = %d WHERE book_id = %d`, count, bookId)
+
+	_, err := pg.db.Exec(ctx, query)
+	if err != nil {
+		return fmt.Errorf("unable to insert row: %w", err)
+	}
+
+	return nil
+}
+
+// func (pg *postgres) UpdateBookCount(ctx context.Context, bookUid string) error {
+
+// 	query := fmt.Sprintf(`SELECT id, library_uid, name, city, address FROM library WHERE library_uid = '%s'`, libraryUid)
+
+// 	rows, err := pg.db.Query(ctx, query)
+
+// 	var library Library
+
+// 	if err != nil {
+// 		fmt.Errorf("unable to query: %w", err)
+// 	}
+// 	defer rows.Close()
+
+// 	library, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[Library])
+// 	if err != nil {
+// 		fmt.Printf("CollectRows error: %v", err)
+// 		return err
+// 	}
+
+// 	query := fmt.Sprintf(`UPDATE library_books SET available_count = '%s' WHERE bookUid = '%s'`, condition, bookUid)
+
+// 	_, err := pg.db.Exec(ctx, query)
+// 	if err != nil {
+// 		return fmt.Errorf("unable to insert row: %w", err)
+// 	}
+
+// 	return nil
+// }

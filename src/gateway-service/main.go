@@ -22,5 +22,7 @@ func main() {
 	router.POST("/api/v1/reservations", handler.CreateReservation)
 	router.POST("/api/v1/reservations/:uid/return", handler.ReturnBook)
 
+	router.GET("/manage/health", handler.GetHealth)
+
 	router.Run()
 }

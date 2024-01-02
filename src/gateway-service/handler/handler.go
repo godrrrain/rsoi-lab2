@@ -939,3 +939,7 @@ func (h *Handler) ReturnBook(c *gin.Context) {
 		Message: "Book was successfully returned",
 	})
 }
+
+func (h *Handler) GetHealth(c *gin.Context) {
+	c.Status(http.StatusOK)
+}

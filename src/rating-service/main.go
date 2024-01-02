@@ -30,5 +30,7 @@ func main() {
 	router.GET("/api/v1/rating/", handler.GetRating)
 	router.PUT("/api/v1/rating/", handler.UpdateRating)
 
+	router.GET("/manage/health", handler.GetHealth)
+
 	router.Run(":8050")
 }

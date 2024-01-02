@@ -229,3 +229,7 @@ func ReservationsToResponse(reservations []storage.Reservation) []ReservationRes
 
 	return res
 }
+
+func (h *Handler) GetHealth(c *gin.Context) {
+	c.Status(http.StatusOK)
+}

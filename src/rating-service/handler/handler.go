@@ -92,3 +92,7 @@ func (h *Handler) UpdateRating(c *gin.Context) {
 		Message: "rating updated",
 	})
 }
+
+func (h *Handler) GetHealth(c *gin.Context) {
+	c.Status(http.StatusOK)
+}

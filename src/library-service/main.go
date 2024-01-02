@@ -34,5 +34,7 @@ func main() {
 	router.PUT("/api/v1/books/:uid/condition", handler.UpdateBookCondition)
 	router.PUT("/api/v1/books/:uid/count/:inc/", handler.UpdateBookCount)
 
+	router.GET("/manage/health", handler.GetHealth)
+
 	router.Run(":8060")
 }

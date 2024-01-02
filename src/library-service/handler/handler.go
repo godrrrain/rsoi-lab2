@@ -249,3 +249,7 @@ func BooksToResponse(books []storage.Book) []BookResponse {
 
 	return res
 }
+
+func (h *Handler) GetHealth(c *gin.Context) {
+	c.Status(http.StatusOK)
+}

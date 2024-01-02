@@ -33,5 +33,7 @@ func main() {
 	router.POST("/api/v1/reservations", handler.CreateReservation)
 	router.PUT("/api/v1/reservations/:uid", handler.UpdateReservationStatus)
 
+	router.GET("/manage/health", handler.GetHealth)
+
 	router.Run(":8070")
 }

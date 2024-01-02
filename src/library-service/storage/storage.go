@@ -48,6 +48,7 @@ type Storage interface {
 	GetBookInfoByUid(ctx context.Context, bookUid string) (BookInfo, error)
 	GetLibraryByUid(ctx context.Context, libraryUid string) (Library, error)
 	UpdateBookCount(ctx context.Context, bookId int, count int) error
+	UpdateBookCondition(ctx context.Context, bookUid string, condition string) error
 }
 
 type postgres struct {
@@ -199,6 +200,17 @@ func (pg *postgres) GetLibraryByUid(ctx context.Context, libraryUid string) (Lib
 
 func (pg *postgres) UpdateBookCount(ctx context.Context, bookId int, count int) error {
 	query := fmt.Sprintf(`UPDATE library_books SET available_count = %d WHERE book_id = %d`, count, bookId)
+
+	_, err := pg.db.Exec(ctx, query)
+	if err != nil {
+		return fmt.Errorf("unable to insert row: %w", err)
+	}
+
+	return nil
+}
+
+func (pg *postgres) UpdateBookCondition(ctx context.Context, bookUid string, condition string) error {
+	query := fmt.Sprintf(`UPDATE books SET condition = '%s' WHERE book_id = '%s'`, condition, bookUid)
 
 	_, err := pg.db.Exec(ctx, query)
 	if err != nil {

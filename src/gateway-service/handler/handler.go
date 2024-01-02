@@ -26,7 +26,7 @@ type MessageResponse struct {
 }
 
 type LibraryResponse struct {
-	Library_uid string `json:"library_uid"`
+	Library_uid string `json:"libraryUid"`
 	Name        string `json:"name"`
 	City        string `json:"city"`
 	Address     string `json:"address"`
@@ -40,16 +40,16 @@ type LibrariesLimited struct {
 }
 
 type BookResponse struct {
-	Book_uid        string `json:"book_uid"`
+	Book_uid        string `json:"bookUid"`
 	Name            string `json:"name"`
 	Author          string `json:"author"`
 	Genre           string `json:"genre"`
 	Condition       string `json:"condition"`
-	Available_count int    `json:"available_count"`
+	Available_count int    `json:"availableCount"`
 }
 
 type BookToUserResponse struct {
-	Book_uid string `json:"book_uid"`
+	Book_uid string `json:"bookUid"`
 	Name     string `json:"name"`
 	Author   string `json:"author"`
 	Genre    string `json:"genre"`
@@ -67,29 +67,29 @@ type RatingResponse struct {
 }
 
 type ReservationResponse struct {
-	Reservation_uid string `json:"reservation_uid"`
+	Reservation_uid string `json:"reservationUid"`
 	Username        string `json:"username"`
-	Book_uid        string `json:"book_uid"`
-	Library_uid     string `json:"library_uid"`
+	Book_uid        string `json:"bookUid"`
+	Library_uid     string `json:"libraryUid"`
 	Status          string `json:"status"`
-	Start_date      string `json:"start_date"`
-	Till_date       string `json:"till_date"`
+	Start_date      string `json:"startDate"`
+	Till_date       string `json:"tillDate"`
 }
 
 type ReservationToUserResponse struct {
-	Reservation_uid string             `json:"reservation_uid"`
+	Reservation_uid string             `json:"reservationUid"`
 	Status          string             `json:"status"`
-	Start_date      string             `json:"start_date"`
-	Till_date       string             `json:"till_date"`
+	Start_date      string             `json:"startDate"`
+	Till_date       string             `json:"tillDate"`
 	Book            BookToUserResponse `json:"book"`
 	Library         LibraryResponse    `json:"library"`
 }
 
 type TakeBookResponse struct {
-	Reservation_uid string             `json:"reservation_uid"`
+	Reservation_uid string             `json:"reservationUid"`
 	Status          string             `json:"status"`
-	Start_date      string             `json:"start_date"`
-	Till_date       string             `json:"till_date"`
+	Start_date      string             `json:"startDate"`
+	Till_date       string             `json:"tillDate"`
 	Book            BookToUserResponse `json:"book"`
 	Library         LibraryResponse    `json:"library"`
 	Rating          RatingResponse     `json:"rating"`
@@ -99,6 +99,11 @@ type CreateReservationRequest struct {
 	BookUid    string `json:"bookUid"`
 	LibraryUid string `json:"libraryUid"`
 	TillDate   string `json:"tillDate"`
+}
+
+type UpdateReservationRequest struct {
+	Condition string `json:"condition"`
+	Date      string `json:"date"`
 }
 
 type ReservationAmount struct {
@@ -690,7 +695,8 @@ func (h *Handler) CreateReservation(c *gin.Context) {
 		Rating:          rating,
 	}
 
-	requestUpdateCountURL := fmt.Sprintf("%s/api/v1/books/%s/count", libraryService, book.Book_uid)
+	//update count
+	requestUpdateCountURL := fmt.Sprintf("%s/api/v1/books/%s/count/0", libraryService, book.Book_uid)
 
 	reqCount, err := http.NewRequest(http.MethodPut, requestUpdateCountURL, nil)
 	if err != nil {
@@ -716,6 +722,220 @@ func (h *Handler) CreateReservation(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
 
-	//TO DO уменьшить available_count
+func (h *Handler) ReturnBook(c *gin.Context) {
+
+	resFee := 0
+
+	username := c.GetHeader("X-User-Name")
+
+	if username == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: "username must be given as X-User-Name Header",
+		})
+		return
+	}
+
+	var inputUpdateBody UpdateReservationRequest
+
+	err := json.NewDecoder(c.Request.Body).Decode(&inputUpdateBody)
+	if err != nil {
+		fmt.Printf("failed to decode body %s\n", err.Error())
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	//getting reservation info
+	requestReservURL := fmt.Sprintf("%s/api/v1/reservations/info/%s", reservationService, c.Param("uid"))
+
+	reqReserv, err := http.NewRequest(http.MethodGet, requestReservURL, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+	reqReserv.Header.Set("X-User-Name", username)
+
+	resReserv, err := http.DefaultClient.Do(reqReserv)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	resBodyReserv, err := io.ReadAll(resReserv.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	var reservation ReservationResponse
+	if json.Unmarshal(resBodyReserv, &reservation) != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	//updating status
+	requestStatusURL := fmt.Sprintf("%s/api/v1/reservations/%s", reservationService, c.Param("uid"))
+
+	marshalled, err := json.Marshal(inputUpdateBody)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+	}
+
+	reqStatus, err := http.NewRequest(http.MethodPut, requestStatusURL, bytes.NewReader(marshalled))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	resStatus, err := http.DefaultClient.Do(reqStatus)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	if resStatus.StatusCode == 204 {
+		resFee = resFee + 1
+	}
+
+	//updating condition
+	requestConditionURL := fmt.Sprintf("%s/api/v1/books/%s/condition", libraryService, reservation.Book_uid)
+
+	reqCondition, err := http.NewRequest(http.MethodPut, requestConditionURL, bytes.NewReader(marshalled))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	resCondition, err := http.DefaultClient.Do(reqCondition)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	if resCondition.StatusCode == 201 {
+		resFee = resFee + 1
+	}
+
+	//updating count
+	requestCountURL := fmt.Sprintf("%s/api/v1/books/%s/count/1/", libraryService, reservation.Book_uid)
+
+	reqCount, err := http.NewRequest(http.MethodPut, requestCountURL, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	_, err = http.DefaultClient.Do(reqCount)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	//getting rating
+	requestRatingURL := fmt.Sprintf("%s/api/v1/rating/", ratingService)
+
+	reqRating, err := http.NewRequest(http.MethodGet, requestRatingURL, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+	reqRating.Header.Set("X-User-Name", username)
+
+	resRating, err := http.DefaultClient.Do(reqRating)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	resBodyRating, err := io.ReadAll(resRating.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	var rating RatingResponse
+	if json.Unmarshal(resBodyRating, &rating) != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	//update rating
+	if resFee != 0 {
+		resFee = resFee * -10
+	} else {
+		resFee = 1
+	}
+
+	rating.Stars = rating.Stars + resFee
+
+	if rating.Stars < 0 {
+		rating.Stars = 0
+	}
+	if rating.Stars > 100 {
+		rating.Stars = 100
+	}
+
+	requestUpdRatingURL := fmt.Sprintf("%s/api/v1/rating/", ratingService)
+
+	marshalled, err = json.Marshal(rating)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+	}
+
+	reqUpdRating, err := http.NewRequest(http.MethodPut, requestUpdRatingURL, bytes.NewReader(marshalled))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	reqUpdRating.Header.Set("X-User-Name", username)
+
+	_, err = http.DefaultClient.Do(reqUpdRating)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusNoContent, MessageResponse{
+		Message: "Book was successfully returned",
+	})
 }

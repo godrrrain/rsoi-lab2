@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -20,26 +21,31 @@ type MessageResponse struct {
 }
 
 type LibraryResponse struct {
-	Library_uid string `json:"library_uid"`
+	Library_uid string `json:"libraryUid"`
 	Name        string `json:"name"`
 	Address     string `json:"address"`
 	City        string `json:"city"`
 }
 
 type BookResponse struct {
-	Book_uid        string `json:"book_uid"`
+	Book_uid        string `json:"bookUid"`
 	Name            string `json:"name"`
 	Author          string `json:"author"`
 	Genre           string `json:"genre"`
 	Condition       string `json:"condition"`
-	Available_count int    `json:"available_count"`
+	Available_count int    `json:"availableCount"`
 }
 
 type BookToUserResponse struct {
-	Book_uid string `json:"book_uid"`
+	Book_uid string `json:"bookUid"`
 	Name     string `json:"name"`
 	Author   string `json:"author"`
 	Genre    string `json:"genre"`
+}
+
+type RequestUpdateReservation struct {
+	Condition string `json:"condition"`
+	Date      string `json:"date"`
 }
 
 type Handler struct {
@@ -97,7 +103,12 @@ func (h *Handler) UpdateBookCount(c *gin.Context) {
 		return
 	}
 
-	err = h.storage.UpdateBookCount(context.Background(), book.ID, book.Available_count-1)
+	count := 1
+	if c.Param("inc") == "1" {
+		count = -1
+	}
+
+	err = h.storage.UpdateBookCount(context.Background(), book.ID, book.Available_count-count)
 
 	if err != nil {
 		fmt.Printf("failed to update book count %s\n", err.Error())
@@ -109,6 +120,50 @@ func (h *Handler) UpdateBookCount(c *gin.Context) {
 
 	c.JSON(http.StatusOK, MessageResponse{
 		Message: "count updated",
+	})
+}
+
+func (h *Handler) UpdateBookCondition(c *gin.Context) {
+
+	book, err := h.storage.GetBookInfoByUid(context.Background(), c.Param("uid"))
+
+	if err != nil {
+		fmt.Printf("failed to get libraries %s\n", err.Error())
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	var reqUpdRes RequestUpdateReservation
+
+	err = json.NewDecoder(c.Request.Body).Decode(&reqUpdRes)
+	if err != nil {
+		fmt.Printf("failed to decode body %s\n", err.Error())
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	if reqUpdRes.Condition != book.Condition {
+		err = h.storage.UpdateBookCondition(context.Background(), c.Param("uid"), reqUpdRes.Condition)
+
+		if err != nil {
+			fmt.Printf("failed to update reservation %s\n", err.Error())
+			c.JSON(http.StatusBadRequest, ErrorResponse{
+				Message: err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusCreated, MessageResponse{
+			Message: "condition updated",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, MessageResponse{
+		Message: "condition already updated",
 	})
 }
 

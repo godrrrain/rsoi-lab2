@@ -20,6 +20,7 @@ func main() {
 	router.GET("/api/v1/rating/", handler.GetRating)
 	router.GET("/api/v1/reservations", handler.GetReservations)
 	router.POST("/api/v1/reservations", handler.CreateReservation)
+	router.POST("/api/v1/reservations/:uid/return", handler.ReturnBook)
 
 	router.Run()
 }

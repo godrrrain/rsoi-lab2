@@ -22,17 +22,6 @@ type Reservation struct {
 	Till_date       time.Time `json:"till_date"`
 }
 
-type ReservationResponse struct {
-	ID              int    `json:"id"`
-	Reservation_uid string `json:"reservation_uid"`
-	Username        string `json:"username"`
-	Book_uid        string `json:"book_uid"`
-	Library_uid     string `json:"library_uid"`
-	Status          string `json:"status"`
-	Start_date      string `json:"start_date"`
-	Till_date       string `json:"till_date"`
-}
-
 type ReservationAmount struct {
 	Amount int `json:"amount"`
 }
@@ -44,8 +33,8 @@ type Storage interface {
 	GetReservations(ctx context.Context, username string) ([]Reservation, error)
 	GetReservationByUid(ctx context.Context, reservation_uid string) (Reservation, error)
 	GetRentedReservationAmount(ctx context.Context, username string) (ReservationAmount, error)
-	CreateReservation(ctx context.Context, username string, bookUid string, libraryUid string, tillDate string) (ReservationResponse, error)
-	UpdateReservationStatus(ctx context.Context, reservation_uid string, condition string) error
+	CreateReservation(ctx context.Context, username string, bookUid string, libraryUid string, tillDate string) (Reservation, error)
+	UpdateReservationStatus(ctx context.Context, reservation_uid string, status string) error
 }
 
 type postgres struct {
@@ -76,9 +65,9 @@ func (pg *postgres) Close() {
 	pg.db.Close()
 }
 
-func (pg *postgres) CreateReservation(ctx context.Context, username string, bookUid string, libraryUid string, tillDate string) (ReservationResponse, error) {
+func (pg *postgres) CreateReservation(ctx context.Context, username string, bookUid string, libraryUid string, tillDate string) (Reservation, error) {
 
-	var reservation ReservationResponse
+	var reservation Reservation
 
 	uid := uuid.New()
 
@@ -101,13 +90,20 @@ func (pg *postgres) CreateReservation(ctx context.Context, username string, book
 	if err != nil {
 		return reservation, fmt.Errorf("unable to insert row: %w", err)
 	}
+
+	tillDateTime, err := time.Parse("2006-01-02", tillDate)
+	if err != nil {
+		fmt.Println(err)
+		return reservation, fmt.Errorf("unable to convert time: %w", err)
+	}
+
 	reservation.Reservation_uid = reservation_uid
 	reservation.Username = username
 	reservation.Book_uid = bookUid
 	reservation.Library_uid = libraryUid
 	reservation.Status = "RENTED"
-	reservation.Start_date = start_date
-	reservation.Till_date = tillDate
+	reservation.Start_date = time.Now().UTC()
+	reservation.Till_date = tillDateTime
 
 	return reservation, nil
 }
@@ -179,8 +175,8 @@ func (pg *postgres) GetRentedReservationAmount(ctx context.Context, username str
 	return reservationAmount, nil
 }
 
-func (pg *postgres) UpdateReservationStatus(ctx context.Context, reservation_uid string, condition string) error {
-	query := fmt.Sprintf(`UPDATE reservation SET status = '%s' WHERE reservation_uid = '%s'`, condition, reservation_uid)
+func (pg *postgres) UpdateReservationStatus(ctx context.Context, reservation_uid string, status string) error {
+	query := fmt.Sprintf(`UPDATE reservation SET status = '%s' WHERE reservation_uid = '%s'`, status, reservation_uid)
 
 	_, err := pg.db.Exec(ctx, query)
 	if err != nil {

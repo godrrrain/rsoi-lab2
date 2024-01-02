@@ -28,6 +28,7 @@ func main() {
 	router.Use(cors.Default())
 
 	router.GET("/api/v1/rating/", handler.GetRating)
+	router.PUT("/api/v1/rating/", handler.UpdateRating)
 
 	router.Run(":8050")
 }

@@ -31,7 +31,7 @@ func main() {
 	router.GET("/api/v1/reservations/info/:uid", handler.GetReservationByUid)
 	router.GET("/api/v1/reservations/amount", handler.GetRentedReservationAmount)
 	router.POST("/api/v1/reservations", handler.CreateReservation)
-	router.PATCH("/api/v1/reservations/:uid", handler.UpdateReservationStatus)
+	router.PUT("/api/v1/reservations/:uid", handler.UpdateReservationStatus)
 
 	router.Run(":8070")
 }

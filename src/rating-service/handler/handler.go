@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -53,5 +54,41 @@ func (h *Handler) GetRating(c *gin.Context) {
 
 	c.JSON(http.StatusOK, RatingResponse{
 		Stars: rating.Stars,
+	})
+}
+
+func (h *Handler) UpdateRating(c *gin.Context) {
+
+	username := c.GetHeader("X-User-Name")
+
+	if username == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: "username must be given as X-User-Name Header",
+		})
+		return
+	}
+
+	var reqRating RatingResponse
+
+	err := json.NewDecoder(c.Request.Body).Decode(&reqRating)
+	if err != nil {
+		fmt.Printf("failed to decode body %s\n", err.Error())
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	err = h.storage.UpdateRating(context.Background(), username, reqRating.Stars)
+	if err != nil {
+		fmt.Printf("failed to update raing %s\n", err.Error())
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, MessageResponse{
+		Message: "rating updated",
 	})
 }

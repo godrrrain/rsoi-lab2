@@ -23,6 +23,7 @@ type Storage interface {
 	// Delete(id int) error
 	// GetAll() []Person
 	GetRating(ctx context.Context, username string) (Rating, error)
+	UpdateRating(ctx context.Context, username string, stars int) error
 }
 
 type postgres struct {
@@ -77,4 +78,15 @@ func (pg *postgres) GetRating(ctx context.Context, username string) (Rating, err
 	}
 
 	return rating, nil
+}
+
+func (pg *postgres) UpdateRating(ctx context.Context, username string, stars int) error {
+	query := fmt.Sprintf(`UPDATE rating SET stars = %d WHERE username = '%s'`, stars, username)
+
+	_, err := pg.db.Exec(ctx, query)
+	if err != nil {
+		return fmt.Errorf("unable to update row: %w", err)
+	}
+
+	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"lab2/src/reservation-service/storage"
 
@@ -29,14 +30,19 @@ type RequestCreateReservation struct {
 	TillDate   string `json:"tillDate"`
 }
 
+type RequestUpdateReservation struct {
+	Condition string `json:"condition"`
+	Date      string `json:"date"`
+}
+
 type ReservationResponse struct {
-	Reservation_uid string `json:"reservation_uid"`
+	Reservation_uid string `json:"reservationUid"`
 	Username        string `json:"username"`
-	Book_uid        string `json:"book_uid"`
-	Library_uid     string `json:"library_uid"`
+	Book_uid        string `json:"bookUid"`
+	Library_uid     string `json:"libraryUid"`
 	Status          string `json:"status"`
-	Start_date      string `json:"start_date"`
-	Till_date       string `json:"till_date"`
+	Start_date      string `json:"startDate"`
+	Till_date       string `json:"tillDate"`
 }
 
 func NewHandler(storage storage.Storage) *Handler {
@@ -79,7 +85,7 @@ func (h *Handler) GetReservationByUid(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, reservation)
+	c.JSON(http.StatusOK, ReservationToResponse(reservation))
 }
 
 func (h *Handler) GetRentedReservationAmount(c *gin.Context) {
@@ -138,17 +144,57 @@ func (h *Handler) CreateReservation(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, reservation)
+	c.JSON(http.StatusOK, ReservationToResponse(reservation))
 }
 
 func (h *Handler) UpdateReservationStatus(c *gin.Context) {
 
-	err := h.storage.UpdateReservationStatus(context.Background(), c.Param("uid"), c.Query("condition"))
+	reservation, err := h.storage.GetReservationByUid(context.Background(), c.Param("uid"))
+
+	if err != nil {
+		fmt.Printf("failed to get libraries %s\n", err.Error())
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	var reqUpdRes RequestUpdateReservation
+
+	err = json.NewDecoder(c.Request.Body).Decode(&reqUpdRes)
+	if err != nil {
+		fmt.Printf("failed to decode body %s\n", err.Error())
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	date, err := time.Parse("2006-01-02", reqUpdRes.Date)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+	status := "RETURNED"
+	if date.After(reservation.Till_date) {
+		status = "EXPIRED"
+	}
+
+	err = h.storage.UpdateReservationStatus(context.Background(), c.Param("uid"), status)
 
 	if err != nil {
 		fmt.Printf("failed to update reservation %s\n", err.Error())
 		c.JSON(http.StatusBadRequest, ErrorResponse{
 			Message: err.Error(),
+		})
+		return
+	}
+
+	if status == "EXPIRED" {
+		c.JSON(http.StatusNoContent, MessageResponse{
+			Message: "status updated",
 		})
 		return
 	}

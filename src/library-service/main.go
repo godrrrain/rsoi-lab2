@@ -31,7 +31,8 @@ func main() {
 	router.GET("/api/v1/libraries/:uid/books/", handler.GetBooksByLibraryUid)
 	router.GET("/api/v1/libraries/:uid/", handler.GetLibraryByUid)
 	router.GET("/api/v1/books/:uid/", handler.GetBookInfoByUid)
-	router.PUT("/api/v1/books/:uid/count", handler.UpdateBookCount)
+	router.PUT("/api/v1/books/:uid/condition", handler.UpdateBookCondition)
+	router.PUT("/api/v1/books/:uid/count/:inc/", handler.UpdateBookCount)
 
 	router.Run(":8060")
 }

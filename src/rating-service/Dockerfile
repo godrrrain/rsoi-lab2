@@ -6,7 +6,7 @@ RUN export GOPATH=/app
 
 WORKDIR /app
 
-RUN go mod download
+RUN go mod tidy
 
 RUN go build -o rating ./src/rating-service
 

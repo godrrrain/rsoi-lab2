@@ -24,6 +24,7 @@ CREATE TABLE reservation
 );
 
 GRANT ALL ON ALL TABLES IN SCHEMA public TO program;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO program;
 
 \c libraries;
 
@@ -55,6 +56,7 @@ CREATE TABLE library_books
 );
 
 GRANT ALL ON ALL TABLES IN SCHEMA public TO program;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO program;
 
 -- UPDATE library_books SET available_count = 0 WHERE book_id = 3;
 -- SELECT books.*, library_books.available_count from library_books, books, library 
@@ -83,6 +85,7 @@ CREATE TABLE rating
 );
 
 GRANT ALL ON ALL TABLES IN SCHEMA public TO program;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO program;
 
 -- INSERT INTO rating VALUES (1, 'godrain', 20);
 INSERT INTO rating VALUES (1, 'Test Max', 20);

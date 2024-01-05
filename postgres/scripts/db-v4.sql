@@ -78,4 +78,4 @@ CREATE TABLE rating
 );
 
 -- INSERT INTO rating VALUES (1, 'godrain', 20);
--- INSERT INTO rating VALUES (1, 'Test Max', 20);
+INSERT INTO rating VALUES (1, 'Test Max', 20);

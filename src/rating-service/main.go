@@ -12,7 +12,8 @@ import (
 )
 
 func main() {
-	postgresURL := "postgres://program:test@localhost:5432/ratings"
+	postgresURL := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s",
+		"postgres", 5432, "program", "ratings", "test")
 	psqlDB, err := storage.NewPgStorage(context.Background(), postgresURL)
 	if err != nil {
 		fmt.Printf("Postgresql init: %s", err)

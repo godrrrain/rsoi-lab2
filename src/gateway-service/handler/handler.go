@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	ratingService      string = "http://localhost:8050"
-	libraryService     string = "http://localhost:8060"
-	reservationService string = "http://localhost:8070"
+	ratingService      string = "http://rating-service:8050"
+	libraryService     string = "http://library-service:8060"
+	reservationService string = "http://reservation-service:8070"
 )
 
 type ErrorResponse struct {

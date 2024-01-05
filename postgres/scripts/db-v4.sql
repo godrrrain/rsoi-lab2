@@ -23,6 +23,8 @@ CREATE TABLE reservation
     till_date       TIMESTAMP   NOT NULL
 );
 
+GRANT ALL ON ALL TABLES IN SCHEMA public TO program;
+
 \c libraries;
 
 CREATE TABLE library
@@ -51,6 +53,9 @@ CREATE TABLE library_books
     library_id      INT REFERENCES library (id),
     available_count INT NOT NULL
 );
+
+GRANT ALL ON ALL TABLES IN SCHEMA public TO program;
+
 -- UPDATE library_books SET available_count = 0 WHERE book_id = 3;
 -- SELECT books.*, library_books.available_count from library_books, books, library 
 -- 	where books.book_uid = 'c6cdb5f4-40c2-4658-b71d-66385e8707ee' and library.id = library_books.library_id 
@@ -76,6 +81,8 @@ CREATE TABLE rating
     stars    INT         NOT NULL
         CHECK (stars BETWEEN 0 AND 100)
 );
+
+GRANT ALL ON ALL TABLES IN SCHEMA public TO program;
 
 -- INSERT INTO rating VALUES (1, 'godrain', 20);
 INSERT INTO rating VALUES (1, 'Test Max', 20);
